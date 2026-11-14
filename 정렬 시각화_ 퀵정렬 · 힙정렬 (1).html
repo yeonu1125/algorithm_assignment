@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>정렬 시각화: 퀵정렬 · 힙정렬</title>
+<style>
+:root{--bg:#f7f7f5;--fg:#17181c;--mut:#667085;--line:#dcdde1;--cell:#e4e5e9;--piv:#f2a516;--sm:#2f6fe4;--lg:#e0483e;--dn:#1f9d62;--btn:#fff;--code:#eceef1;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15171c;--fg:#eceef2;--mut:#9aa1ad;--line:#2d313a;--cell:#2b2f38;--btn:#1f232b;--code:#101216}}
+:root[data-theme="dark"]{--bg:#15171c;--fg:#eceef2;--mut:#9aa1ad;--line:#2d313a;--cell:#2b2f38;--btn:#1f232b;--code:#101216}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo",system-ui,sans-serif;line-height:1.5}
+main{max-width:730px;margin:0 auto;padding:18px 14px 28px}
+h1{font-size:20px;margin:0 0 10px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;padding:8px 18px;font-size:15px;font-weight:600;color:var(--mut)}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--sm)}
+.sub{color:var(--mut);font-size:13px;margin:0 0 12px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--mut);margin-bottom:6px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+#tab-h .legend i{border-radius:50%}
+.stage{position:relative;border-bottom:1px solid var(--line);overflow:hidden;max-width:640px}
+#q-stage{height:216px}#h-stage{height:372px}#h-stage>*{position:absolute;left:0;top:0}
+svg{pointer-events:none;color:var(--fg)}
+.lab{font-size:11px;color:var(--mut);white-space:nowrap}
+.slot{border:1.5px dashed var(--line);border-radius:7px}
+.cell,.node{position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;font-weight:700;background:var(--cell);color:var(--fg);transition:background .35s,color .35s,opacity .35s,outline-color .3s;will-change:transform}
+.cell{border-radius:8px;font-size:16px}.node{border-radius:50%}
+.cell.piv{background:var(--piv);color:#1b1300;z-index:3}
+.cell.sm{background:var(--sm);color:#fff}.cell.lg{background:var(--lg);color:#fff}.cell.done{background:var(--dn);color:#fff}
+.cell.dim{opacity:.38}
+.cell.pick{outline:2px dashed var(--piv);outline-offset:2px;cursor:pointer}
+.ix{position:absolute;top:0;left:0;font-size:11px;color:var(--mut);text-align:center}
+.pt{position:absolute;top:0;left:0;font-size:13px;font-weight:800;text-align:center;line-height:16px;display:none}.pt.i{color:var(--fg)}.pt.j{color:var(--piv)}
+#q-br{position:absolute;height:5px;border-radius:3px;background:var(--mut);opacity:.55;transition:left .5s,width .5s,opacity .3s}
+.cell.b.empty{opacity:.3}.cell.b.hl{outline:2px solid var(--piv);outline-offset:1px}.cell.val{background:var(--dn);color:#fff}
+.off{opacity:0}
+.cmp{background:var(--piv);color:#1b1300}.small{background:var(--lg);color:#fff}.big{background:var(--sm);color:#fff}.ok{background:var(--dn);color:#fff}
+#sym{font-size:20px;font-weight:800;color:var(--piv);background:var(--bg);border-radius:6px;padding:0 4px;line-height:24px;display:none}
+.cap{min-height:66px;margin:12px 0 4px;padding:9px 12px;border-left:3px solid var(--piv);background:color-mix(in srgb,var(--cell) 55%,transparent);font-size:15px}
+.meta{font-size:12.5px;color:var(--mut);margin-bottom:10px;display:flex;justify-content:space-between}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,select{font:inherit;font-size:14px;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
+button:focus-visible,select:focus-visible{outline:2px solid var(--sm);outline-offset:2px}
+button.p{background:var(--sm);border-color:var(--sm);color:#fff;min-width:84px}
+button:disabled{opacity:.4;cursor:default}
+.code{margin:14px 0 0;background:var(--code);border-radius:8px;padding:8px 0;font:13px/1.6 ui-monospace,"SF Mono",Menlo,Consolas,monospace;overflow-x:auto}
+.ln{padding:0 12px;border-left:3px solid transparent;white-space:pre}
+.ln.on{background:color-mix(in srgb,var(--piv) 26%,transparent);border-left-color:var(--piv)}
+.ln.arr{color:var(--mut);margin-bottom:4px}
+.ln b{color:var(--sm)}
+:root[data-theme="dark"] .ln b{color:#7fb0ff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ln b{color:#7fb0ff}}
+.note{margin-top:14px;font-size:12.5px;color:var(--mut)}
+</style></head><body><main>
+<h1>정렬 알고리즘 시각화</h1>
+<div class="tabs" role="tablist"><button role="tab" id="tb-q" aria-selected="true" aria-controls="tab-q">퀵정렬</button><button role="tab" id="tb-h" aria-selected="false" aria-controls="tab-h">힙정렬</button></div>
+<section id="tab-q" role="tabpanel">
+<p class="sub">배열 3, 7, 1, 4, 5, 2, 8, 6 · 피벗을 가운데로 보내고 작은 값은 왼쪽, 큰 값은 오른쪽에 배치</p>
+<div class="legend"><span><i style="background:var(--piv)"></i>피벗</span><span><i style="background:var(--sm)"></i>피벗보다 작은 값</span><span><i style="background:var(--lg)"></i>피벗보다 큰 값</span><span><i style="background:var(--dn)"></i>위치 확정</span></div>
+<div id="q-stage" class="stage"><div id="q-br"></div></div>
+<div id="q-cap" class="cap"></div>
+<div id="q-meta" class="meta"><span id="q-cnt"></span><span id="q-rng"></span></div>
+<div class="ctl"><button id="q-prev">◀ 이전</button><button id="q-play" class="p">▶ 재생</button><button id="q-next">다음 ▶</button><button id="q-reset">처음으로</button></div>
+<div id="q-code" class="code" aria-label="현재 실행 중인 의사코드"></div>
+
+</section>
+<section id="tab-h" role="tabpanel" hidden>
+<p class="sub">배열 3, 7, 1, 4, 5, 2, 8, 6 · 최대 힙 구성 → 루트를 꺼내 상단 리스트에 채우기 → 반복</p>
+<div class="legend">
+<span><i style="background:var(--piv)"></i>비교 대상</span>
+<span><i style="background:var(--lg)"></i>부모가 작아서 내려가야 함</span>
+<span><i style="background:var(--sm)"></i>올라오는 큰 자식</span>
+<span><i style="background:var(--dn)"></i>조건 만족·확정</span>
+</div>
+<div id="h-stage" class="stage"></div>
+<div id="h-cap" class="cap"></div>
+<div id="h-meta" class="meta"><span id="h-cnt"></span><span id="h-fin"></span></div>
+<div class="ctl">
+<button id="h-prev">◀ 이전</button>
+<button id="h-play" class="p">▶ 재생</button>
+<button id="h-next">다음 ▶</button>
+<button id="h-reset">처음으로</button>
+</div>
+<div id="h-code" class="code" aria-label="현재 실행 중인 의사코드"></div>
+
+</section>
+</main><script>window.TABS={};
+(function(){const Q=id=>document.getElementById('q-'+id),SPD=1;
+const V=[3,7,1,4,5,2,8,6],N=V.length,cp=a=>a.slice(),B=x=>'<b>'+x+'</b>',nm=a=>a.length?a.map(i=>V[i]).join(', '):'없음';
+const steps=[],ctx={lo:null,hi:null,pv:null,sm:null,lg:null,pp:null};let cmpTotal=0;const PRE=[4,2,7];let pc=0;
+let slots=V.map((_,i)=>i),cls=V.map(()=>'n');
+function snap(cap,o){o=o||{};const pos=[];slots.forEach((id,i)=>pos[id]=i);
+ steps.push({pos,cls:cp(cls),cap,range:o.range||null,arc:o.arc||[],lift:o.lift==null?-1:o.lift,hl:o.hl||[],ptr:o.ptr||null,ctx:{...ctx},arr:slots.map(id=>V[id])});}
+snap('처음 배열입니다. 재생(▶) 또는 다음(▶)을 누르면 퀵정렬이 시작됩니다.');
+function rec(lo,hi){
+ if(lo>hi)return;
+ const ids=slots.slice(lo,hi+1),rg=[lo,hi];
+ for(let id=0;id<N;id++)if(cls[id]!=='done')cls[id]=ids.includes(id)?'n':'dim';
+ ctx.lo=lo;ctx.hi=hi;ctx.pv=ctx.sm=ctx.lg=ctx.pp=null;
+ if(lo===hi){cls[ids[0]]='done';snap('원소가 1개뿐인 리스트 ['+V[ids[0]]+']입니다. low < high 가 거짓이므로 그대로 종료하고 위치를 확정합니다.',{range:rg,hl:[2]});return;}
+ const pi=pc<PRE.length?ids.find(i=>V[i]===PRE[pc]):undefined,p=pi!==undefined?pi:ids[0],pv=V[p];pc++;cls[p]='piv';ctx.pv=pv;
+ snap('리스트 ['+nm(ids)+'] (S['+(lo+1)+'..'+(hi+1)+'])에서 피벗을 하나 선택합니다(이 리스트에서는 '+pv+' 선택).',{range:rg,lift:p,hl:[3,11]});
+ const sm=ids.filter(i=>i!==p&&V[i]<pv),lg=ids.filter(i=>i!==p&&V[i]>pv);
+ sm.forEach(i=>cls[i]='sm');lg.forEach(i=>cls[i]='lg');ctx.sm=sm.map(i=>V[i]);ctx.lg=lg.map(i=>V[i]);cmpTotal+=ids.length-1;
+ snap('피벗 '+pv+'을(를) 나머지 원소와 비교합니다(비교 '+(ids.length-1)+'번). 작은 값(파랑): '+nm(sm)+', 큰 값(빨강): '+nm(lg)+'.',{range:rg,lift:p,hl:[13,14]});
+ slots.splice(lo,ids.length,...sm,p,...lg);const mid=lo+sm.length;ctx.pp=mid;
+ snap('피벗이 가운데 S['+(mid+1)+']로 이동하고, 작은 값은 왼쪽, 큰 값은 오른쪽으로 배치됩니다. pivotpoint = '+(mid+1)+'입니다.',{range:rg,arc:[p],hl:[16,18,19]});
+ cls[p]='done';
+ snap('피벗 '+pv+'의 위치가 확정되었습니다. 왼쪽 '+sm.length+'개, 오른쪽 '+lg.length+'개 리스트에서 각각 같은 과정을 반복합니다.',{range:rg,hl:[4,5]});
+ rec(lo,mid-1);rec(mid+1,hi);
+}
+rec(0,N-1);
+for(let id=0;id<N;id++)cls[id]='done';
+ctx.lo=ctx.hi=ctx.pv=ctx.sm=ctx.lg=ctx.pp=null;
+snap('정렬이 완료되었습니다. 결과: '+slots.map(i=>V[i]).join(', ')+'. 모든 원소의 위치가 확정되었습니다. 비교는 모두 '+cmpTotal+'번입니다.');
+
+function codeHTML(s){const c=s.ctx,on=new Set(s.hl),lst=a=>a&&a.length?a.join(', '):'없음';
+ const L=[
+ ['void quicksort(index low, index high) {',c.lo!=null?'low = '+B(c.lo+1)+', high = '+B(c.hi+1):''],
+ ['    index pivotpoint;',''],
+ ['    if (low &lt; high) {',on.has(2)&&c.lo!=null?B(c.lo+1)+' &lt; '+B(c.hi+1)+' → 거짓':''],
+ ['        partition(low, high, pivotpoint);   // 피벗을 제자리에 놓고 위치를 받음',''],
+ ['        quicksort(low, pivotpoint - 1);      // 왼쪽 부분 정렬',on.has(4)&&c.pp!=null?'quicksort(low = '+B(c.lo+1)+', high = '+B(c.pp)+')':''],
+ ['        quicksort(pivotpoint + 1, high);     // 오른쪽 부분 정렬',on.has(5)&&c.pp!=null?'quicksort(low = '+B(c.pp+2)+', high = '+B(c.hi+1)+')':''],
+ ['    }',''],['}',''],['',''],
+ ['void partition(index low, index high, index&amp; pivotpoint) {',''],
+ ['    index i, j;',''],
+ ['    keytype pivotitem = S[low];              // 첫 원소를 피벗으로',on.has(11)&&c.pv!=null?'pivotitem = '+B(c.pv)+' (선택한 피벗)':''],
+ ['    j = low;',''],
+ ['    for (i = low + 1; i &lt;= high; i++)',''],
+ ['        if (S[i] &lt; pivotitem) {              // 피벗보다 작으면',on.has(14)&&c.sm?'작은 값 {'+B(lst(c.sm))+'}, 큰 값 {'+B(lst(c.lg))+'}':''],
+ ['            j++;',''],
+ ['            exchange S[i] and S[j];          // 작은 값 영역 뒤로 보냄',on.has(16)?'작은 값을 피벗의 왼쪽으로 모음':''],
+ ['        }',''],
+ ['    pivotpoint = j;',on.has(18)&&c.pp!=null?'pivotpoint = '+B(c.pp+1):''],
+ ['    exchange S[low] and S[pivotpoint];       // 피벗을 제자리로',on.has(19)&&c.pp!=null?'피벗이 S['+B(c.pp+1)+']로 이동':''],
+ ['}','']];
+ let h='<div class="ln arr">S = ['+s.arr.join(', ')+']</div>';
+ L.forEach((x,k)=>{h+='<div class="ln'+(on.has(k)?' on':'')+'">'+x[0]+(x[1]?'   ← '+x[1]:'')+'</div>';});
+ return h;}
+
+const stage=Q('stage'),br=Q('br');
+const els=V.map(v=>{const e=document.createElement('div');e.className='cell';e.textContent=v;stage.appendChild(e);return e;});
+const ixs=V.map((_,i)=>{const e=document.createElement('div');e.className='ix';e.textContent=i+1;stage.appendChild(e);return e;});
+let cw=48,gap=6,ox=0,idx=0,raf=0,timer=0,playing=false;const cur=V.map(()=>({x:0,y:0})),BASE=112,LIFT=64,ARC=50;
+const X=sl=>ox+sl*(cw+gap);
+function layout(){const W=stage.clientWidth;gap=W<420?4:8;cw=Math.min(64,Math.floor((W-gap*(N-1))/N));ox=(W-(cw*N+gap*(N-1)))/2;
+ els.forEach(e=>{e.style.width=e.style.height=cw+'px';e.style.fontSize=Math.round(cw*.42)+'px';});
+ ixs.forEach((e,i)=>{e.style.width=cw+'px';e.style.transform='translate('+X(i)+'px,'+(BASE+cw+4)+'px)';});}
+const paint=(e,x,y)=>{e.style.transform='translate('+x+'px,'+y+'px)';};
+const dur=s=>(s.arc.length?1100:650)/SPD;
+function show(an){
+ cancelAnimationFrame(raf);const s=steps[idx];
+ els.forEach((e,id)=>{e.className='cell '+s.cls[id];});
+ if(s.range){br.style.opacity=.55;br.style.top=(BASE+cw+26)+'px';br.style.left=X(s.range[0])+'px';br.style.width=(X(s.range[1])-X(s.range[0])+cw)+'px';}else br.style.opacity=0;
+ Q('cap').textContent=s.cap;
+ Q('cnt').textContent='확정 '+s.cls.filter(c=>c==='done').length+' / '+N;
+ Q('rng').textContent=s.range?'현재 리스트: S['+(s.range[0]+1)+'..'+(s.range[1]+1)+']':'';
+ Q('code').innerHTML=codeHTML(s);Q('prev').disabled=idx===0;
+ const tg=els.map((_,id)=>({x:X(s.pos[id]),y:s.lift===id?LIFT:BASE}));
+ if(!an){els.forEach((e,id)=>{cur[id]={...tg[id]};paint(e,tg[id].x,tg[id].y);});return;}
+ const st=cur.map(c=>({...c})),d=dur(s),t0=performance.now();
+ (function f(now){const t=Math.min(1,(now-t0)/d),e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  els.forEach((el,id)=>{const x=st[id].x+(tg[id].x-st[id].x)*e;let y=st[id].y+(tg[id].y-st[id].y)*e;
+   if(s.arc.includes(id))y+=(s.arc[0]===id?-1:1)*4*ARC*t*(1-t);cur[id]={x,y};paint(el,x,y);});
+  if(t<1)raf=requestAnimationFrame(f);})(t0);
+}
+function go(d){idx=Math.max(0,Math.min(steps.length-1,idx+d));show(true);}
+function stop(){playing=false;clearTimeout(timer);Q('play').textContent='▶ 재생';}
+function tick(){if(!playing)return;if(idx>=steps.length-1){stop();return;}go(1);timer=setTimeout(tick,dur(steps[idx])+900/SPD);}
+Q('play').onclick=()=>{if(playing){stop();return;}if(idx>=steps.length-1){idx=0;show(false);}playing=true;Q('play').textContent='⏸ 일시정지';tick();};
+Q('next').onclick=()=>{stop();go(1);};Q('prev').onclick=()=>{stop();go(-1);};
+Q('reset').onclick=()=>{stop();idx=0;show(true);};
+addEventListener('resize',()=>{layout();show(false);});
+layout();show(false);
+window.TABS.q={refresh:()=>{layout();show(false);},stop};})();
+(function(){
+const V=[3,7,1,4,5,2,8,6],N=V.length,$=id=>document.getElementById('h-'+id);
+let steps=[];
+function build(dir){
+ steps=[];const heap=V.map((_,i)=>i),vis=Array(N).fill(false),hide=Array(N).fill(false),sorted=Array(N).fill(null);let k=0;const ctx={i:null,size:N,l:null,r:null,c:null,slot:null,rv:null,lv:null};
+ function push(cap,o){o=o||{};const cls=Array(N).fill('n');(o.cls||[]).forEach(([id,c])=>cls[id]=c);
+  steps.push({cap,heap:heap.slice(),vis:vis.slice(),hide:hide.slice(),sorted:sorted.slice(),arr:heap.map(id=>id==null?null:V[id]),cls,hl:o.hl||[],cmp:o.cmp||null,arrow:o.arrow==null?-1:o.arrow,arc:o.arc||null,fly:o.fly==null?-1:o.fly,code:o.code||[],ctx:{...ctx}});}
+ function sift(i,size){
+  while(true){
+   const l=2*i+1,r=l+1,p=heap[i];ctx.i=i;ctx.size=size;ctx.l=l;ctx.r=r;ctx.c=null;
+   if(l>=size){push('더 내려갈 자식이 없습니다. 노드 '+V[p]+'의 위치가 확정되어 힙 조건을 만족합니다.',{cls:[[p,'ok']],code:[8]});return;}
+   const a=heap[l],b=r<size?heap[r]:null,kids=b==null?[a]:[a,b],up=kids.filter(x=>V[x]>V[p]),names=kids.map(x=>V[x]).join(', ');
+   let c;
+   if(up.length===0){push('부모 '+V[p]+'이(가) 자식 '+names+'보다 크거나 같습니다. 자식끼리 비교할 필요 없이 힙 조건을 만족하므로 여기서 멈춥니다.',{cls:[[p,'ok']].concat(kids.map(x=>[x,'ok'])),hl:[i,l].concat(b==null?[]:[r]),code:[9]});return;}
+   if(up.length===1){c=up[0];ctx.c=heap.indexOf(c);const o=kids.find(x=>x!==c);
+    push('부모 '+V[p]+'이(가) 자식 '+V[c]+'보다 작습니다.'+(o!=null?' 다른 자식 '+V[o]+'은 부모 이하이므로 자식끼리 비교 없이 '+V[c]+'이 큰 쪽입니다.':'')+' 부모가 작으므로 아래로 이동해야 합니다.',{cls:[[p,'small'],[c,'big']],hl:[i,heap.indexOf(c)],code:[9]});}
+   else{push('부모 '+V[p]+'이(가) 두 자식 '+V[a]+', '+V[b]+'보다 모두 작습니다. 누구와 교체할지 정하기 위해 자식끼리 비교합니다.',{cls:[[p,'small'],[a,'cmp'],[b,'cmp']],cmp:{a,b,sign:V[a]>V[b]?'>':'<'},code:[10]});
+    c=V[a]>V[b]?a:b;ctx.c=heap.indexOf(c);
+    push('큰 자식 '+V[c]+'과 부모 '+V[p]+'을 교체해야 합니다. 부모가 작으므로 아래로 이동합니다.',{cls:[[p,'small'],[c,'big']],hl:[i,heap.indexOf(c)],code:[10]});}
+   const ci=heap.indexOf(c);
+   ctx.c=ci;heap[i]=c;heap[ci]=p;
+   push('부모 '+V[p]+'과 자식 '+V[c]+'을 서로 교환합니다.',{cls:[[p,'small'],[c,'big']],arc:[p,c],hl:[i,ci],code:[11]});
+   i=ci;
+  }
+ }
+ push('주어진 리스트가 하단에 있습니다. 인덱스는 1~8입니다.');
+ vis.fill(true);
+ push('리스트를 앞에서부터 차례로 완전이진트리 모양에 배치합니다. 인덱스 i의 왼쪽 자식은 2i, 오른쪽 자식은 2i+1입니다.');
+ for(let i=(N>>1)-1;i>=0;i--){ctx.i=i;ctx.size=N;ctx.l=ctx.r=ctx.c=null;push('최대 힙을 만듭니다. 마지막 부모부터 루트 순서로 진행하며, '+(i+1)+'번 노드('+V[heap[i]]+')부터 아래로 내려가며 조건을 맞춥니다.',{cls:[[heap[i],'cmp']],hl:[i],code:[1]});sift(i,N);}
+ push('최대 힙이 완성되었습니다. 모든 부모가 자식보다 크거나 같고, 루트가 최댓값입니다.',{cls:[[heap[0],'ok']]});
+ let size=N;
+ while(size>=1){
+  const root=heap[0],slot=dir==='L'?k:N-1-k;sorted[slot]=root;heap[0]=null;hide[root]=true;k++;size--;ctx.slot=slot;ctx.rv=V[root];ctx.i=ctx.l=ctx.r=ctx.c=null;ctx.size=size;
+  push('루트의 값 '+V[root]+'을 상단 리스트의 '+(slot+1)+'번째 칸으로 보냅니다.',{fly:root,code:[3]});
+  if(size===0)break;
+  const last=heap[size];ctx.lv=V[last];
+  heap[0]=last;heap[size]=null;
+  push('마지막 노드 '+V[last]+'을(를) 빈 루트로 이동합니다. 힙 크기는 '+size+'입니다. 이제 자식들과 비교하며 힙을 다시 맞춥니다.',{cls:[[last,'cmp']],hl:[0],code:[4,5],arrow:size});
+  sift(0,size);
+ }
+ const res=sorted.map(i=>V[i]).join(', ');
+ push('정렬이 완료되었습니다. 상단 리스트: '+res+(dir==='L'?'. 큰 값부터 채웠으므로 내림차순입니다.':'. 오름차순입니다.'));
+}
+
+const stage=$('stage'),CH=34,SY=18,BY=312,LY=[96,148,200,252];
+const mkEl=(c,t,p)=>{const e=document.createElement('div');e.className=c;if(t!=null)e.textContent=t;(p||stage).appendChild(e);return e;};
+const lab1=mkEl('lab','정렬된 리스트 (상단)'),lab2=mkEl('lab','힙 배열 (하단, 인덱스 = 노드 번호)');
+const slots=V.map(()=>mkEl('slot')),svg=document.createElementNS('http://www.w3.org/2000/svg','svg');stage.appendChild(svg);
+const bc=V.map(()=>mkEl('cell b')),bix=V.map((_,i)=>mkEl('lab',i+1)),nodes=V.map(v=>mkEl('node',v)),vals=V.map(v=>mkEl('cell val off',v)),sym=mkEl('',null);sym.id='sym';
+let W,cw,gap=6,ox,nd,idx=0,raf=0,timer=0,playing=false,arrTm=0;const cur=V.map(()=>({x:0,y:0})),curV=V.map(()=>({x:0,y:0}));
+const tp=i=>{const lv=31-Math.clz32(i+1),j=i+1-(1<<lv);return{x:(j+.5)/(1<<lv)*W,y:LY[lv]};};
+const ap=i=>({x:ox+i*(cw+gap)+cw/2,y:BY+CH/2}),sp=i=>({x:ox+i*(cw+gap)+cw/2,y:SY+CH/2});
+const mv=(e,c,w,h)=>{e.style.transform='translate('+(c.x-w/2)+'px,'+(c.y-h/2)+'px)';};
+function layout(){W=stage.clientWidth;cw=Math.min(44,Math.floor((W-gap*7)/8));ox=(W-(cw*8+gap*7))/2;nd=Math.max(26,Math.min(36,Math.floor(W/8)-8));
+ svg.setAttribute('width',W);svg.setAttribute('height',372);
+ nodes.forEach(e=>{e.style.width=e.style.height=nd+'px';e.style.fontSize=Math.round(nd*.42)+'px';});
+ [...slots,...bc,...vals].forEach(e=>{e.style.width=cw+'px';e.style.height=CH+'px';});
+ slots.forEach((e,i)=>mv(e,sp(i),cw,CH));bc.forEach((e,i)=>mv(e,ap(i),cw,CH));
+ bix.forEach((e,i)=>{e.style.width=cw+'px';e.style.textAlign='center';e.style.transform='translate('+(ox+i*(cw+gap))+'px,'+(BY+CH+3)+'px)';});
+ lab1.style.transform='translate('+ox+'px,2px)';lab2.style.transform='translate('+ox+'px,'+(BY-20)+'px)';}
+function codeHTML(s){const c=s.ctx,A=s.arr,B=x=>'<b>'+x+'</b>',n1=x=>x==null?null:x+1;
+ const M=t=>t===1?[12,13]:(t===3||t===4)?[15]:t===5?[16]:t===8?[1]:t===9?(s.cls.includes('ok')?[3,4]:[3,5]):t===10?[5]:t===11?[6,7]:[];
+ const on=new Set(s.code.flatMap(M)),i1=n1(c.i),l1=n1(c.l),r1=n1(c.r),c1=n1(c.c),hasR=c.r!=null&&c.r<c.size,last=c.size+1;
+ const L=[
+ ['void siftdown(int n, index i) {              // 힙 크기 n, 노드 i를 아래로 내림',''],
+ ['    while (2*i &lt;= n) {',on.has(1)&&i1!=null?'2*i = '+B(2*i1)+', n = '+B(c.size):''],
+ ['        l = 2*i;  r = 2*i + 1;',(on.has(3)||on.has(5)||on.has(6))&&i1!=null?'i = '+B(i1)+', l = '+B(l1)+', r = '+B(r1):''],
+ ['        if (S[i] &gt;= S[l] &amp;&amp; (r &gt; n || S[i] &gt;= S[r]))',on.has(3)&&i1!=null?'S[i] = '+B(A[c.i])+', S[l] = '+B(A[c.l])+(hasR?', S[r] = '+B(A[c.r]):', r은 n 초과'):''],
+ ['            break;                           // 부모가 자식들보다 크거나 같으면 끝',''],
+ ['        c = (r &gt; n || S[l] &gt; S[r]) ? l : r;  // 부모가 작을 때만 큰 자식을 고름',on.has(5)&&c1!=null?'c = '+B(c1):''],
+ ['        exchange S[i] and S[c];',on.has(6)&&c1!=null?'S['+B(i1)+'] ↔ S['+B(c1)+']':''],
+ ['        i = c;',''],['    }',''],['}',''],['',''],
+ ['void heapsort(int n, keytype S[]) {',''],
+ ['    for (i = n/2; i &gt;= 1; i--)               // 1단계: 최대 힙 만들기',on.has(12)&&i1!=null?'i = '+B(i1):''],
+ ['        siftdown(n, i);',''],
+ ['    for (last = n; last &gt;= 2; last--) {      // 2단계: 최댓값을 뒤로 보냄',''],
+ ['        exchange S[1] and S[last];',on.has(15)&&c.slot!=null?'S[1] ↔ S['+B(last)+']':''],
+ ['        siftdown(last - 1, 1);               // 줄어든 힙에서 루트 복구',on.has(16)?'siftdown('+B(c.size)+', 1)':''],
+ ['    }',''],['}','']];
+ let h='<div class="ln arr">S = ['+A.map(v=>v==null?'_':v).join(', ')+']</div>';
+ L.forEach((x,k)=>{h+='<div class="ln'+(on.has(k)?' on':'')+'">'+x[0]+(x[1]?'   ← '+x[1]:'')+'</div>';});
+ return h;}
+function ntarget(s,id){if(!s.vis[id])return ap(id);return tp(s.hide[id]?0:s.heap.indexOf(id));}
+function shorten(a,b,r){const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;return[{x:a.x+dx/L*r,y:a.y+dy/L*r},{x:b.x-dx/L*r,y:b.y-dy/L*r}];}
+function show(animate){
+ cancelAnimationFrame(raf);const s=steps[idx];
+ nodes.forEach((e,id)=>{e.className='node '+s.cls[id]+(s.vis[id]&&!s.hide[id]?'':' off');});
+ vals.forEach((e,id)=>{e.className='cell val'+(s.sorted.includes(id)?'':' off');});
+ bc.forEach((e,i)=>{const v=s.arr[i];e.textContent=v==null?'':v;e.className='cell b'+(v==null?' empty':'')+(s.hl.includes(i)?' hl':'');});
+ let g='<defs><marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0L8,4L0,8z" fill="currentColor"/></marker></defs>';
+ for(let i=1;i<N;i++){const q=(i-1)>>1;if(s.heap[i]!=null&&s.heap[q]!=null&&s.vis[s.heap[i]]){const a=tp(q),b=tp(i);g+='<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="var(--mut)" stroke-opacity=".55" stroke-width="1.5"/>';}}
+ const g0=g;if(s.arrow>=0&&animate){const [a,b]=shorten(tp(s.arrow),tp(0),nd/2+3);g+='<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="currentColor" stroke-width="2.5" marker-end="url(#ah)"/>';}
+ svg.innerHTML=g;clearTimeout(arrTm);if(s.arrow>=0&&animate)arrTm=setTimeout(()=>{svg.innerHTML=g0;},800);
+ if(s.cmp){const A=tp(s.heap.indexOf(s.cmp.a)),Bq=tp(s.heap.indexOf(s.cmp.b));sym.style.display='block';sym.textContent=s.cmp.sign;sym.style.transform='translate('+((A.x+Bq.x)/2-10)+'px,'+(A.y-12)+'px)';}else sym.style.display='none';
+ $('cap').textContent=s.cap;$('code').innerHTML=codeHTML(s);$('cnt').textContent='단계 '+(idx+1)+' / '+steps.length;$('fin').textContent='리스트 채움 '+s.sorted.filter(x=>x!=null).length+' / '+N;
+ $('prev').disabled=idx===0;
+ const tn=nodes.map((_,id)=>ntarget(s,id));
+ if(s.fly>=0)curV[s.fly]={...tp(0)};
+ const tv=vals.map((_,id)=>{const sl=s.sorted.indexOf(id);return sl<0?{...curV[id]}:sp(sl);});
+ if(!animate){nodes.forEach((e,id)=>{cur[id]={...tn[id]};mv(e,tn[id],nd,nd);});vals.forEach((e,id)=>{curV[id]={...tv[id]};mv(e,tv[id],cw,CH);});return;}
+ const sn=cur.map(c=>({...c})),sv=curV.map(c=>({...c})),dly=s.arrow>=0?800:0,d=dur(s)-dly,t0=performance.now()+dly;
+ (function f(now){const t=Math.max(0,Math.min(1,(now-t0)/d)),e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  nodes.forEach((el,id)=>{let x=sn[id].x+(tn[id].x-sn[id].x)*e,y=sn[id].y+(tn[id].y-sn[id].y)*e;
+   if(s.arc&&s.arc.includes(id)){const dx=tn[id].x-sn[id].x,dy=tn[id].y-sn[id].y,L=Math.hypot(dx,dy)||1,o=16*4*t*(1-t);x+=-dy/L*o;y+=dx/L*o;}
+   cur[id]={x,y};mv(el,cur[id],nd,nd);});
+  vals.forEach((el,id)=>{const x=sv[id].x+(tv[id].x-sv[id].x)*e,y=sv[id].y+(tv[id].y-sv[id].y)*e;curV[id]={x,y};mv(el,curV[id],cw,CH);});
+  if(t<1)raf=requestAnimationFrame(f);})(t0);
+}
+function dur(s){const sp=1;return(s.arc?1100:s.arrow>=0?1500:s.fly>=0?900:s.vis.some((v,i)=>v&&steps[Math.max(0,idx-1)].vis[i]===false)?1000:650)/sp;}
+function go(d){idx=Math.max(0,Math.min(steps.length-1,idx+d));show(true);}
+function stop(){playing=false;clearTimeout(timer);$('play').textContent='▶ 재생';}
+function tick(){if(!playing)return;if(idx>=steps.length-1){stop();return;}go(1);timer=setTimeout(tick,dur(steps[idx])+900/1);}
+$('play').onclick=()=>{if(playing){stop();return;}if(idx>=steps.length-1){idx=0;show(false);}playing=true;$('play').textContent='⏸ 일시정지';tick();};
+$('next').onclick=()=>{stop();go(1);};$('prev').onclick=()=>{stop();go(-1);};
+$('reset').onclick=()=>{stop();idx=0;show(true);};
+addEventListener('resize',()=>{layout();show(false);});
+build('R');layout();show(false);
+
+window.TABS.h={refresh:()=>{layout();show(false);},stop};})();
+
+(function(){const tb={q:document.getElementById('tb-q'),h:document.getElementById('tb-h')},pn={q:document.getElementById('tab-q'),h:document.getElementById('tab-h')};
+function act(k){for(const x of['q','h']){const on=x===k;tb[x].setAttribute('aria-selected',on);pn[x].hidden=!on;if(!on)TABS[x].stop();}TABS[k].refresh();try{history.replaceState(null,'','#'+(k==='h'?'heap':'quick'));}catch(e){}}
+tb.q.onclick=()=>act('q');tb.h.onclick=()=>act('h');if(location.hash==='#heap')act('h');})();
+</script></body></html>
